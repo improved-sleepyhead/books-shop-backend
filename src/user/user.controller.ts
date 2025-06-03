@@ -1,0 +1,100 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+  ForbiddenException,
+} from '@nestjs/common';
+import { UserService } from './user.service';
+import { CreateUserDto, UpdateUserDto, UserDto } from './dto/user.dto';
+import { UserProfileDto } from './dto/user-profile.dto';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { CurrentUser } from '../auth/decorators/user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt.guard';
+import { Roles } from './decorators/user.decorator';
+import { UserRole } from '@prisma/client';
+import { UserRolesGuard } from './guard/user-routes.guard';
+
+@Controller('users')
+@UseGuards(JwtAuthGuard, UserRolesGuard)
+export class UserController {
+  constructor(private readonly userService: UserService) {}
+
+  @Get('me')
+  @Auth()
+  async getCurrentUser(@CurrentUser('id') userId: string): Promise<UserDto> {
+    return this.userService.getById(userId);
+  }
+
+  @Get('me/profile')
+  @Auth()
+  async getCurrentUserProfile(@CurrentUser('id') userId: string): Promise<UserProfileDto> {
+    return this.userService.getProfile(userId);
+  }
+
+  @Get(':id')
+  @Roles(UserRole.ADMIN)
+  async getById(@Param('id') id: string): Promise<UserDto> {
+    return this.userService.getById(id);
+  }
+
+  @Get('email/:email')
+  @Roles(UserRole.ADMIN)
+  async getByEmail(@Param('email') email: string) {
+    return this.userService.getByEmail(email);
+  }
+
+  @Get()
+  @Roles(UserRole.ADMIN)
+  async getAllUsers(
+    @Query('page', ParseIntPipe) page: number = 1,
+    @Query('limit', ParseIntPipe) limit: number = 10,
+  ) {
+    return this.userService.getAllUsers(page, limit);
+  }
+
+  @Get(':id/profile')
+  @Roles(UserRole.ADMIN)
+  async getProfile(@Param('id') id: string): Promise<UserProfileDto> {
+    return this.userService.getProfile(id);
+  }
+
+  @Post()
+  @Roles(UserRole.ADMIN)
+  async create(@Body() dto: CreateUserDto) {
+    return this.userService.create(dto);
+  }
+
+  @Patch(':id')
+  @Auth()
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+    @CurrentUser('id') currentUserId: string,
+    @CurrentUser('role') currentUserRole: UserRole,
+  ) {
+    // Only allow admins or the user themselves to update
+    if (currentUserRole !== UserRole.ADMIN && currentUserId !== id) {
+      throw new ForbiddenException('You can only update your own profile');
+    }
+    
+    // Prevent non-admins from changing roles
+    if (currentUserRole !== UserRole.ADMIN && dto.role) {
+      throw new ForbiddenException('Only admins can change roles');
+    }
+
+    return this.userService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN)
+  async delete(@Param('id') id: string) {
+    return this.userService.delete(id);
+  }
+}
