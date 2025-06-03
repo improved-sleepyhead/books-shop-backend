@@ -151,7 +151,6 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    // Prevent deletion of admin users
     if (user.role === UserRole.ADMIN) {
       const adminCount = await this.prisma.user.count({
         where: { role: UserRole.ADMIN },
