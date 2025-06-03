@@ -39,19 +39,19 @@ export class UserController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles('ADMIN')
   async getById(@Param('id') id: string): Promise<UserDto> {
     return this.userService.getById(id);
   }
 
   @Get('email/:email')
-  @Roles(UserRole.ADMIN)
+  @Roles('ADMIN')
   async getByEmail(@Param('email') email: string) {
     return this.userService.getByEmail(email);
   }
 
   @Get()
-  @Roles(UserRole.ADMIN)
+  @Roles('ADMIN')
   async getAllUsers(
     @Query('page', ParseIntPipe) page: number = 1,
     @Query('limit', ParseIntPipe) limit: number = 10,
@@ -60,13 +60,13 @@ export class UserController {
   }
 
   @Get(':id/profile')
-  @Roles(UserRole.ADMIN)
+  @Roles('ADMIN')
   async getProfile(@Param('id') id: string): Promise<UserProfileDto> {
     return this.userService.getProfile(id);
   }
 
   @Post()
-  @Roles(UserRole.ADMIN)
+  @Roles('ADMIN')
   async create(@Body() dto: CreateUserDto) {
     return this.userService.create(dto);
   }
@@ -79,12 +79,9 @@ export class UserController {
     @CurrentUser('id') currentUserId: string,
     @CurrentUser('role') currentUserRole: UserRole,
   ) {
-    // Only allow admins or the user themselves to update
     if (currentUserRole !== UserRole.ADMIN && currentUserId !== id) {
       throw new ForbiddenException('You can only update your own profile');
     }
-    
-    // Prevent non-admins from changing roles
     if (currentUserRole !== UserRole.ADMIN && dto.role) {
       throw new ForbiddenException('Only admins can change roles');
     }
@@ -93,7 +90,7 @@ export class UserController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles('ADMIN')
   async delete(@Param('id') id: string) {
     return this.userService.delete(id);
   }
