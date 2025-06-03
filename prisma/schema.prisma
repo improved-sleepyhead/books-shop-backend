@@ -1,0 +1,142 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  VENDOR
+  ADMIN
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String
+  name      String
+  role      UserRole   @default(CUSTOMER)
+
+  vendorProfile Vendor?       @relation("VendorOwner")
+  orders        Order[]       @relation("OrderCustomer")
+  reviews       Review[]      @relation("UserReviews")
+  tokens        Token[]       @relation("UserTokens")
+  logs          Log[]         @relation("UserLogs")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+}
+
+model Vendor {
+  id          String   @id @default(cuid())
+  displayName String
+  subdomain   String   @unique
+
+  ownerId     String   @unique @map("owner_id")
+  owner       User     @relation("VendorOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  books       Book[]   @relation("BookVendor")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+}
+
+model Book {
+  id           String     @id @default(cuid())
+  title        String
+  description  String?
+  price        Decimal    @db.Decimal(10, 2)
+  isbn         String     @unique
+  digital      Boolean    @default(false)
+  author       String?
+  publishedAt  DateTime?
+  publisher    String?
+
+  vendorId     String     @map("vendor_id")
+  vendor       Vendor     @relation("BookVendor", fields: [vendorId], references: [id], onDelete: Cascade)
+
+  categories   Category[] @relation("BookCategories")
+  tags         Tag[]      @relation("BookTags")
+  reviews      Review[]
+  orderItems   OrderItem[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+}
+
+model Category {
+  id    String   @id @default(cuid())
+  name  String   @unique
+
+  books Book[]   @relation("BookCategories")
+}
+
+model Tag {
+  id    String   @id @default(cuid())
+  name  String   @unique
+
+  books Book[]   @relation("BookTags")
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  customerId     String      @map("customer_id")
+  customer       User        @relation("OrderCustomer", fields: [customerId], references: [id], onDelete: Cascade)
+
+  items          OrderItem[]
+  status         String      @default("PENDING")
+  stripePaymentId String?
+
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+}
+
+model OrderItem {
+  id       String   @id @default(cuid())
+  orderId  String   @map("order_id")
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  bookId   String   @map("book_id")
+  book     Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  quantity Int
+  price    Decimal  @db.Decimal(10, 2)
+}
+
+model Review {
+  id       String   @id @default(cuid())
+  rating   Int
+  comment  String?
+
+  bookId   String   @map("book_id")
+  book     Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  userId   String   @map("user_id")
+  user     User     @relation("UserReviews", fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+}
+
+model Token {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+
+  userId    String   @map("user_id")
+  user      User     @relation("UserTokens", fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+}
+
+model Log {
+  id        String   @id @default(cuid())
+  action    String
+
+  userId    String   @map("user_id")
+  user      User     @relation("UserLogs", fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+}
