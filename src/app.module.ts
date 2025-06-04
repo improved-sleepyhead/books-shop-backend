@@ -6,9 +6,10 @@ import { UserModule } from './user/user.module';
 import { VendorModule } from './vendor/vendor.module';
 import { BookModule } from './book/book.module';
 import { OrderModule } from './order/order.module';
+import { ReviewModule } from './review/review.module';
 
 @Module({
-  imports: [AuthModule, UserModule, VendorModule, BookModule, OrderModule],
+  imports: [AuthModule, UserModule, VendorModule, BookModule, OrderModule, ReviewModule],
   controllers: [AppController],
   providers: [AppService],
 })

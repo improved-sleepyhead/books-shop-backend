@@ -37,12 +37,30 @@ export class BookService {
       if (maxPrice !== undefined) where.price.lte = maxPrice;
     }
 
-    return this.prisma.book.findMany({
+    const books = await this.prisma.book.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
     });
+
+    const bookIds = books.map((book) => book.id);
+
+    const ratings = await this.prisma.review.groupBy({
+      by: ['bookId'],
+      where: { bookId: { in: bookIds } },
+      _avg: { rating: true },
+    });
+
+    const ratingMap = ratings.reduce((acc, curr) => {
+      acc[curr.bookId] = curr._avg.rating;
+      return acc;
+    }, {} as Record<string, number | null>);
+
+    return books.map((book) => ({
+      ...book,
+      averageRating: ratingMap[book.id] ?? null,
+    }));
   }
 
 
@@ -52,7 +70,16 @@ export class BookService {
     });
 
     if (!book) throw new NotFoundException('Book not found');
-    return book;
+
+    const avgRating = await this.prisma.review.aggregate({
+      where: { bookId: id },
+      _avg: { rating: true },
+    });
+
+    return {
+      ...book,
+      averageRating: avgRating._avg.rating ?? null,
+    };
   }
 
   async create(userId: string, dto: CreateBookDto): Promise<BookDto> {

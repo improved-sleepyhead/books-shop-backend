@@ -13,4 +13,5 @@ export class BookDto {
   vendorId: string;
   createdAt: Date;
   updatedAt: Date;
+  averageRating?: number | null;
 }
