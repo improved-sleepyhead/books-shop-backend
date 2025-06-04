@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from 'src/prisma.service';
+import { ROLES_KEY } from 'src/user/decorators/user.decorator';
 
 @Injectable()
 export class ReviewOwnershipGuard {
@@ -15,33 +16,49 @@ export class ReviewOwnershipGuard {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredRoles = this.reflector.getAllAndOverride<string[]>(
-      'roles',
+      ROLES_KEY,
       [context.getHandler(), context.getClass()],
     );
 
-    if (!requiredRoles || !requiredRoles.includes('CUSTOMERID')) {
+    if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
-    const reviewId = request.params.id;
 
-    if (!user) throw new ForbiddenException('User not found in request');
-
-    if (!reviewId) throw new ForbiddenException('Review ID is required');
-
-    const review = await this.prisma.review.findUnique({
-      where: { id: reviewId },
-      select: { userId: true },
-    });
-
-    if (!review) throw new ForbiddenException('Review not found');
-
-    if (review.userId !== user.id && user.role !== 'ADMIN') {
-      throw new ForbiddenException('You are not the author of this review');
+    if (!user) {
+      throw new ForbiddenException('User not found');
     }
 
-    return true;
+    const hasRole = requiredRoles.some((role) => user.role === role);
+    if (hasRole) {
+      return true;
+    }
+
+    if (requiredRoles.includes('CUSTOMERID')) {
+      const reviewId = request.params.id;
+
+      if (!reviewId) {
+        throw new ForbiddenException('Review ID is required');
+      }
+
+      const review = await this.prisma.review.findUnique({
+        where: { id: reviewId },
+        select: { userId: true },
+      });
+
+      if (!review) {
+        throw new ForbiddenException('Review not found');
+      }
+
+      if (review.userId !== user.id) {
+        throw new ForbiddenException('You are not the author of this review');
+      }
+
+      return true;
+    }
+
+    throw new ForbiddenException('Access denied');
   }
 }
