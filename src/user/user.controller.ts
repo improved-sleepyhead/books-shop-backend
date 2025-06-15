@@ -19,7 +19,7 @@ import { CurrentUser } from '../auth/decorators/user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { Roles } from './decorators/user.decorator';
 import { UserRole } from '@prisma/client';
-import { UserRolesGuard } from './guard/user-routes.guard';
+import { UserRolesGuard } from './guards/user-routes.guard';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, UserRolesGuard)

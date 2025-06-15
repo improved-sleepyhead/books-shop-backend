@@ -13,7 +13,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { Roles } from 'src/user/decorators/user.decorator';
 import { TagDto } from './dto/tag.dto';
 import { CreateTagDto } from './dto/create-tag.dto';
-import { RolesGuard } from './guard/roles.guard';
+import { RolesGuard } from 'src/user/guards/roles.guard';
 
 @Controller('tags')
 @UseGuards(JwtAuthGuard, RolesGuard)
