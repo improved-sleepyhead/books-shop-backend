@@ -9,7 +9,6 @@ datasource db {
 
 enum UserRole {
   CUSTOMER
-  VENDOR
   ADMIN
 }
 
@@ -19,26 +18,12 @@ model User {
   password  String
   name      String
   role      UserRole   @default(CUSTOMER)
+  avatarUrl String?    @map("avatar_url") // URL аватара пользователя
 
-  vendorProfile Vendor?       @relation("VendorOwner")
-  orders        Order[]       @relation("OrderCustomer")
-  reviews       Review[]      @relation("UserReviews")
-  tokens        Token[]       @relation("UserTokens")
-  logs          Log[]         @relation("UserLogs")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-}
-
-model Vendor {
-  id          String   @id @default(cuid())
-  displayName String
-  subdomain   String   @unique
-
-  ownerId     String   @unique @map("owner_id")
-  owner       User     @relation("VendorOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-
-  books       Book[]   @relation("BookVendor")
+  orders    Order[]    @relation("OrderCustomer")
+  reviews   Review[]   @relation("UserReviews")
+  tokens    Token[]    @relation("UserTokens")
+  logs      Log[]      @relation("UserLogs")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -54,9 +39,9 @@ model Book {
   author       String?
   publishedAt  DateTime?
   publisher    String?
-
-  vendorId     String     @map("vendor_id")
-  vendor       Vendor     @relation("BookVendor", fields: [vendorId], references: [id], onDelete: Cascade)
+  stock        Int        @default(0)
+  coverUrl     String?    @map("cover_url") // Основное изображение книги
+  imageUrls    String[]   @map("image_urls") // Массив дополнительных изображений
 
   categories   Category[] @relation("BookCategories")
   tags         Tag[]      @relation("BookTags")
@@ -70,6 +55,8 @@ model Book {
 model Category {
   id    String   @id @default(cuid())
   name  String   @unique
+  slug  String   @unique
+  imageUrl String? @map("image_url") // Изображение категории
 
   books Book[]   @relation("BookCategories")
 }
@@ -77,6 +64,7 @@ model Category {
 model Tag {
   id    String   @id @default(cuid())
   name  String   @unique
+  slug  String   @unique
 
   books Book[]   @relation("BookTags")
 }
@@ -88,6 +76,9 @@ model Order {
 
   items          OrderItem[]
   status         String      @default("PENDING")
+  totalAmount    Decimal     @db.Decimal(10, 2)
+  shippingAddress String?
+  billingAddress String?
   stripePaymentId String?
 
   createdAt      DateTime    @default(now()) @map("created_at")
