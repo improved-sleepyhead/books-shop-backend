@@ -27,6 +27,8 @@ export class CategoryService {
     return this.prisma.category.create({
       data: {
         name: dto.name,
+        slug: dto.slug,
+        imageUrl: dto.imageUrl,
       },
     });
   }
@@ -44,6 +46,8 @@ export class CategoryService {
       where: { id },
       data: {
         name: dto.name,
+        slug: dto.slug,
+        imageUrl: dto.imageUrl,
       },
     });
   }
