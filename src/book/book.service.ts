@@ -11,7 +11,9 @@ import { BookQueryDto } from './dto/book-query.dto';
 
 @Injectable()
 export class BookService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+  ) {}
 
   async getAll(query: BookQueryDto): Promise<BookDto[]> {
     const {
@@ -25,13 +27,24 @@ export class BookService {
       maxPrice,
       userId,
       isFavorite,
+      search,
     } = query;
 
     const where: any = {};
 
-    if (title) where.title = { contains: title, mode: 'insensitive' };
-    if (author) where.author = { contains: author, mode: 'insensitive' };
-    if (isbn) where.isbn = { contains: isbn, mode: 'insensitive' };
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { author: { contains: search, mode: 'insensitive' } },
+        { isbn: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    } else {
+      if (title) where.title = { contains: title, mode: 'insensitive' };
+      if (author) where.author = { contains: author, mode: 'insensitive' };
+      if (isbn) where.isbn = { contains: isbn, mode: 'insensitive' };
+    }
+
     if (digital !== undefined) where.digital = digital;
     if (minPrice !== undefined || maxPrice !== undefined) {
       where.price = {};
@@ -69,7 +82,7 @@ export class BookService {
       _avg: { rating: true },
     });
 
-     const reviewsWithCommentsCount = await this.prisma.review.groupBy({
+    const reviewsWithCommentsCount = await this.prisma.review.groupBy({
       by: ['bookId'],
       where: { 
         bookId: { in: bookIds },

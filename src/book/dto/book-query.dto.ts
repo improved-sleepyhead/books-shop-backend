@@ -40,4 +40,8 @@ export class BookQueryDto {
   @IsOptional()
   @IsBoolean()
   readonly isFavorite?: boolean;
+
+  @IsOptional()
+  @IsString()
+  readonly search?: string;
 }
