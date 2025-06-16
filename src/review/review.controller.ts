@@ -1,5 +1,3 @@
-// src/review/reviewController.ts
-
 import {
   Controller,
   Get,
@@ -19,7 +17,7 @@ import { CurrentUser } from 'src/auth/decorators/user.decorator';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { ReviewDto } from './dto/review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
-import { PaginationDto } from './dto/pagination.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Controller('reviews')
 @UseGuards(JwtAuthGuard, ReviewOwnershipGuard)
