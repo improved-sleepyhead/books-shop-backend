@@ -8,9 +8,10 @@ import { OrderModule } from './order/order.module';
 import { ReviewModule } from './review/review.module';
 import { CategoryModule } from './category/category.module';
 import { TagModule } from './tag/tag.module';
+import { WishlistModule } from './wishlist/wishlist.module';
 
 @Module({
-  imports: [AuthModule, UserModule, BookModule, OrderModule, ReviewModule, CategoryModule, TagModule],
+  imports: [AuthModule, UserModule, BookModule, OrderModule, ReviewModule, CategoryModule, TagModule, WishlistModule],
   controllers: [AppController],
   providers: [AppService],
 })
