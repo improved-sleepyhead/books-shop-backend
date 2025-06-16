@@ -15,62 +15,81 @@ export class AuthService {
         private userService: UserService
     ) {}
 
-    async login(dto: AuthDto){
-        const { password, ...user } = await this.validateUser(dto)
-        const tokens = this.issueTokens(user.id)
+    async login(dto: AuthDto) {
+        const user = await this.validateUser(dto);
 
-        return {
-            user,
-            ...tokens,
-        }
-    }
+        const tokens = this.issueTokens({
+            id: user.id,
+            email: user.email,
+            name: user.name
+        });
 
-    async register(dto: AuthDto){
-        
-        const oldUser = await this.userService.getByEmail(dto.email)
-
-        if (oldUser) throw new BadRequestException('User already exists')
-
-        const { password, ...user } = await this.userService.create(dto)
-
-        const tokens = this.issueTokens(user.id)
-
-        return {
-            user,
-            ...tokens,
-        }
-    }
-
-    async getNewTokens(refreshToken: string) {
-        const result = await this.jwt.verifyAsync(refreshToken);
-        if (!result || !result.id) {
-            throw new UnauthorizedException('Invalid refresh token');
-        }
-    
-        const user = await this.userService.getById(result.id);
-        if (!user) {
-            throw new NotFoundException('User not found');
-        }
-    
-        const tokens = this.issueTokens(user.id);
-    
         return {
             user,
             ...tokens,
         };
     }
 
-    private issueTokens(userId: string){
-        const data = {id:userId}
-        const accessToken = this.jwt.sign(data, {
+    async register(dto: AuthDto) {
+        const oldUser = await this.userService.getByEmail(dto.email);
+        if (oldUser) throw new BadRequestException('User already exists');
+
+        const user = await this.userService.create(dto);
+
+        const tokens = this.issueTokens({
+            id: user.id,
+            email: user.email,
+            name: user.name
+        });
+
+        return {
+            user,
+            ...tokens,
+        };
+    }
+
+    async getNewTokens(refreshToken: string) {
+        const payload = await this.jwt.verifyAsync(refreshToken);
+        
+        if (!payload || !payload.id) {
+            throw new UnauthorizedException('Invalid refresh token');
+        }
+
+        const user = await this.userService.getById(payload.id);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        const tokens = this.issueTokens({
+            id: user.id,
+            email: user.email,
+            name: user.name
+        });
+
+        return {
+            user,
+            ...tokens,
+        };
+    }
+
+    private issueTokens(user: { id: string; email: string; name: string }) {
+        const accessToken = this.jwt.sign({
+            id: user.id,
+            email: user.email,
+            name: user.name,
+        }, {
             expiresIn: '1h'
-        })
+        });
 
-        const refreshToken = this.jwt.sign(data, {
+        const refreshToken = this.jwt.sign({
+            id: user.id,
+            email: user.email,
+            name: user.name,
+        }, {
             expiresIn: '7d'
-        })
+        });
 
-        return { accessToken, refreshToken }
+        return { accessToken, refreshToken };
     }
 
     private async validateUser(dto:AuthDto){
