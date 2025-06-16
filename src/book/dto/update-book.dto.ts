@@ -1,4 +1,5 @@
 import { IsString, IsOptional, IsBoolean, IsDateString, IsArray, IsNumber } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateBookDto {
   @IsOptional()
@@ -51,4 +52,15 @@ export class UpdateBookDto {
   @IsArray()
   @IsString({ each: true })
   imageUrls?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  existingImageUrls?: string[];
+
+  @ApiProperty({ type: 'string', format: 'binary', required: false })
+  coverImage?: Express.Multer.File;
+
+  @ApiProperty({ type: 'array', items: { type: 'string', format: 'binary' }, required: false })
+  additionalImages?: Express.Multer.File[];
 }
