@@ -16,6 +16,7 @@ import { CurrentUser } from '../auth/decorators/user.decorator';
 import { Roles } from 'src/user/decorators/user.decorator';
 import { OrderOwnershipGuard } from './guard/order-ownership.guard';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { Auth } from 'src/auth/decorators/auth.decorator';
 
 @Controller('orders')
 @UseGuards(JwtAuthGuard, OrderOwnershipGuard)
@@ -28,12 +29,14 @@ export class OrderController {
   }
 
   @Get(':id')
+  @Auth()
   @Roles('CUSTOMERID', 'ADMIN')
   getById(@Param('id') id: string, @CurrentUser('id') userId: string) {
     return this.orderService.getOrderById(id, userId);
   }
 
   @Get()
+  @Auth()
   @Roles('CUSTOMERID', 'ADMIN')
   getByUser(
     @CurrentUser('id') userId: string,
@@ -43,12 +46,14 @@ export class OrderController {
   }
 
   @Delete(':id')
+  @Auth()
   @Roles('ADMIN')
   delete(@Param('id') id: string) {
     return this.orderService.deleteOrder(id);
   }
 
   @Patch(':id/status')
+  @Auth()
   @Roles('ADMIN')
   updateStatus(@Param('id') id: string, @Body('status') status: string) {
     return this.orderService.updateOrderStatus(id, status);

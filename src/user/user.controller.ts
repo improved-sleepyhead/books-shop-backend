@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto, UpdateUserDto, UserDto } from './dto/user.dto';
-import { UserProfileDto } from './dto/user-profile.dto';
+import { UpdateProfileDto, UserProfileDto } from './dto/user-profile.dto';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { CurrentUser } from '../auth/decorators/user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
@@ -38,19 +38,31 @@ export class UserController {
     return this.userService.getProfile(userId);
   }
 
+  @Patch('me/profile')
+  @Auth()
+  async updateCurrentUserProfile(
+    @CurrentUser('id') userId: string,
+    @Body() dto: UpdateProfileDto,
+  ): Promise<UserDto> {
+    return this.userService.updateProfile(userId, dto);
+  }
+
   @Get(':id')
+  @Auth()
   @Roles('ADMIN')
   async getById(@Param('id') id: string): Promise<UserDto> {
     return this.userService.getById(id);
   }
 
   @Get('email/:email')
+  @Auth()
   @Roles('ADMIN')
   async getByEmail(@Param('email') email: string) {
     return this.userService.getByEmail(email);
   }
 
   @Get()
+  @Auth()
   @Roles('ADMIN')
   async getAllUsers(
     @Query('page', ParseIntPipe) page: number = 1,
@@ -60,12 +72,14 @@ export class UserController {
   }
 
   @Get(':id/profile')
+  @Auth()
   @Roles('ADMIN')
   async getProfile(@Param('id') id: string): Promise<UserProfileDto> {
     return this.userService.getProfile(id);
   }
 
   @Post()
+  @Auth()
   @Roles('ADMIN')
   async create(@Body() dto: CreateUserDto) {
     return this.userService.create(dto);
@@ -90,6 +104,7 @@ export class UserController {
   }
 
   @Delete(':id')
+  @Auth()
   @Roles('ADMIN')
   async delete(@Param('id') id: string) {
     return this.userService.delete(id);

@@ -4,16 +4,10 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { hash } from 'argon2';
-import { UserProfileDto } from './dto/user-profile.dto';
+import { UpdateProfileDto, UserProfileDto } from './dto/user-profile.dto';
 import { CreateUserDto, UpdateUserDto, UserDto } from './dto/user.dto';
-import {
-  userSelect,
-  userWithVendorProfileSelect,
-  userWithRelationsSelect,
-} from './constants/user.constants';
 import { UserRole } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
-
 
 @Injectable()
 export class UserService {
@@ -22,7 +16,15 @@ export class UserService {
   async getById(id: string): Promise<UserDto> {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      select: userWithVendorProfileSelect,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        avatarUrl: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     if (!user) {
@@ -35,7 +37,14 @@ export class UserService {
   getByEmail(email: string) {
     return this.prisma.user.findUnique({
       where: { email },
-      select: userSelect,
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        name: true,
+        role: true,
+        avatarUrl: true,
+      },
     });
   }
 
@@ -45,7 +54,14 @@ export class UserService {
     return this.prisma.user.findMany({
       skip,
       take: limit,
-      select: userSelect,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        avatarUrl: true,
+        createdAt: true,
+      },
       orderBy: {
         createdAt: 'desc',
       },
@@ -55,23 +71,11 @@ export class UserService {
   async getProfile(userId: string): Promise<UserProfileDto> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        ...userWithRelationsSelect,
+      include: {
         _count: {
           select: {
             orders: true,
             reviews: true,
-          },
-        },
-        vendorProfile: {
-          select: {
-            displayName: true,
-            subdomain: true,
-            _count: {
-              select: {
-                books: true,
-              },
-            },
           },
         },
       },
@@ -81,22 +85,45 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    const result: UserProfileDto = {
-      totalBooks: 0,
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
       totalReviews: user._count.reviews,
       totalOrders: user._count.orders,
     };
+  }
 
-    if (user.vendorProfile) {
-      result.vendorProfile = {
-        displayName: user.vendorProfile.displayName,
-        subdomain: user.vendorProfile.subdomain,
-        totalBooks: user.vendorProfile._count.books,
-      };
-      result.totalBooks = user.vendorProfile._count.books;
+  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<UserDto> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
     }
 
-    return result;
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        email: dto.email,
+        name: dto.name,
+        avatarUrl: dto.avatarUrl,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        avatarUrl: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
   }
 
   async create(dto: CreateUserDto) {
@@ -109,7 +136,13 @@ export class UserService {
         name: dto.name,
         role: dto.role || UserRole.CUSTOMER,
       },
-      select: userSelect,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        avatarUrl: true,
+      },
     });
   }
 
@@ -138,7 +171,13 @@ export class UserService {
     return this.prisma.user.update({
       where: { id },
       data,
-      select: userSelect,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        avatarUrl: true,
+      },
     });
   }
 
@@ -163,7 +202,13 @@ export class UserService {
 
     return this.prisma.user.delete({
       where: { id },
-      select: userSelect,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        avatarUrl: true,
+      },
     });
   }
 }
