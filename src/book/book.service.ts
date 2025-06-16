@@ -69,14 +69,29 @@ export class BookService {
       _avg: { rating: true },
     });
 
+     const reviewsWithCommentsCount = await this.prisma.review.groupBy({
+      by: ['bookId'],
+      where: { 
+        bookId: { in: bookIds },
+        comment: { not: null }
+      },
+      _count: { _all: true },
+    });
+
     const ratingMap = ratings.reduce((acc, curr) => {
       acc[curr.bookId] = curr._avg.rating;
       return acc;
     }, {} as Record<string, number | null>);
 
+    const commentsCountMap = reviewsWithCommentsCount.reduce((acc, curr) => {
+      acc[curr.bookId] = curr._count._all;
+      return acc;
+    }, {} as Record<string, number>);
+
     return books.map((book) => ({
       ...book,
       averageRating: ratingMap[book.id] ?? null,
+      commentsCount: commentsCountMap[book.id] ?? 0,
       isFavorite: userId ? book.wishlistItems?.[0]?.isLiked ?? false : undefined,
     }));
   }
