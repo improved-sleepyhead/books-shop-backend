@@ -10,6 +10,11 @@ import {
   UseGuards,
   ParseIntPipe,
   ForbiddenException,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto, UpdateUserDto, UserDto } from './dto/user.dto';
@@ -20,11 +25,14 @@ import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { Roles } from './decorators/user.decorator';
 import { UserRole } from '@prisma/client';
 import { UserRolesGuard } from './guards/user-routes.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, UserRolesGuard)
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+  ) {}
 
   @Get('me')
   @Auth()
@@ -40,11 +48,21 @@ export class UserController {
 
   @Patch('me/profile')
   @Auth()
+  @UseInterceptors(FileInterceptor('avatar'))
   async updateCurrentUserProfile(
     @CurrentUser('id') userId: string,
     @Body() dto: UpdateProfileDto,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: /^image\/(jpeg|png|gif|webp)$/ }),
+        ],
+        fileIsRequired: false,
+      })
+    ) avatarFile?: Express.Multer.File,
   ): Promise<UserDto> {
-    return this.userService.updateProfile(userId, dto);
+    return this.userService.updateProfile(userId, dto, avatarFile);
   }
 
   @Get(':id')

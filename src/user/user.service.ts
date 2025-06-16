@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { hash } from 'argon2';
 import { UpdateProfileDto, UserProfileDto } from './dto/user-profile.dto';
@@ -9,10 +10,14 @@ import { CreateUserDto, UpdateUserDto, UserDto } from './dto/user.dto';
 import { UserRole } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
 import { userProfileSelect, userSelect } from './constants/user.constants';
+import { FileUploadService } from 'src/file-upload/file-upload.service';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private fileUploadService: FileUploadService,
+  ) {}
 
   async getById(id: string): Promise<UserDto> {
     const user = await this.prisma.user.findUnique({
@@ -65,7 +70,11 @@ export class UserService {
     };
   }
 
-  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<UserDto> {
+  async updateProfile(
+    userId: string,
+    dto: UpdateProfileDto,
+    avatarFile?: Express.Multer.File,
+  ): Promise<UserDto> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -74,15 +83,49 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
+    let avatarUrl = user.avatarUrl;
+
+    if (avatarFile) {
+      const newAvatarUrl = await this.uploadAvatar(userId, avatarFile);
+      
+      if (avatarUrl) {
+        await this.safeDeleteAvatar(avatarUrl);
+      }
+      
+      avatarUrl = newAvatarUrl;
+    } else if (dto.avatarUrl === null) {
+      if (avatarUrl) {
+        await this.safeDeleteAvatar(avatarUrl);
+      }
+      avatarUrl = null;
+    }
+
     return this.prisma.user.update({
       where: { id: userId },
       data: {
         email: dto.email,
         name: dto.name,
-        avatarUrl: dto.avatarUrl,
+        avatarUrl,
       },
       select: userSelect,
     });
+  }
+
+  private async uploadAvatar(userId: string, file: Express.Multer.File): Promise<string> {
+    try {
+      const fileName = `user-avatars/${userId}/${Date.now()}-${file.originalname}`;
+      return await this.fileUploadService.upload(fileName, file.buffer);
+    } catch (error) {
+      throw new BadRequestException('Failed to upload avatar');
+    }
+  }
+
+  private async safeDeleteAvatar(avatarUrl: string): Promise<void> {
+    try {
+      await this.fileUploadService.deleteFile(avatarUrl);
+    } catch (error) {
+      console.error('Failed to delete avatar file:', error);
+    }
   }
 
   async create(dto: CreateUserDto) {
