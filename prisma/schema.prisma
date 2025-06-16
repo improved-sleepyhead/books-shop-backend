@@ -18,12 +18,13 @@ model User {
   password  String
   name      String
   role      UserRole   @default(CUSTOMER)
-  avatarUrl String?    @map("avatar_url") // URL аватара пользователя
+  avatarUrl String?    @map("avatar_url")
 
   orders    Order[]    @relation("OrderCustomer")
   reviews   Review[]   @relation("UserReviews")
   tokens    Token[]    @relation("UserTokens")
   logs      Log[]      @relation("UserLogs")
+  wishlistItems WishlistItem[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -40,8 +41,9 @@ model Book {
   publishedAt  DateTime?
   publisher    String?
   stock        Int        @default(0)
-  coverUrl     String?    @map("cover_url") // Основное изображение книги
-  imageUrls    String[]   @map("image_urls") // Массив дополнительных изображений
+  coverUrl     String?    @map("cover_url")
+  imageUrls    String[]   @map("image_urls")
+  wishlistItems WishlistItem[]
 
   categories   Category[] @relation("BookCategories")
   tags         Tag[]      @relation("BookTags")
@@ -52,11 +54,23 @@ model Book {
   updatedAt DateTime @updatedAt @map("updated_at")
 }
 
+model WishlistItem {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  userId    String
+  bookId    String
+  isLiked   Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  @@unique([userId, bookId])
+}
+
 model Category {
   id    String   @id @default(cuid())
   name  String   @unique
   slug  String   @unique
-  imageUrl String? @map("image_url") // Изображение категории
+  imageUrl String? @map("image_url")
 
   books Book[]   @relation("BookCategories")
 }
