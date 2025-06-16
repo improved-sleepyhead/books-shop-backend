@@ -7,6 +7,7 @@ import { PrismaService } from 'src/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderDto } from './dto/order.dto';
 import { Decimal } from '@prisma/client/runtime/library';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class OrderService {
@@ -24,6 +25,7 @@ export class OrderService {
       throw new NotFoundException('User not found');
     }
 
+    let totalAmount = new Decimal(0);
     for (const item of dto.items) {
       const book = await this.prisma.book.findUnique({
         where: { id: item.bookId },
@@ -31,12 +33,14 @@ export class OrderService {
       if (!book) {
         throw new NotFoundException(`Book with ID ${item.bookId} not found`);
       }
+      totalAmount = totalAmount.plus(new Decimal(item.price).times(item.quantity));
     }
 
     const order = await this.prisma.order.create({
       data: {
         customerId: userId,
         status: 'PENDING',
+        totalAmount,
         items: {
           create: dto.items.map((item) => ({
             bookId: item.bookId,
@@ -58,6 +62,11 @@ export class OrderService {
       where: { id },
       include: {
         customer: true,
+        items: {
+          include: {
+            book: true,
+          },
+        },
       },
     });
 
@@ -72,11 +81,30 @@ export class OrderService {
     return order;
   }
 
-  async getOrdersByUser(userId: string): Promise<OrderDto[]> {
-    return this.prisma.order.findMany({
-      where: { customerId: userId },
-      orderBy: { createdAt: 'desc' },
-    });
+  async getOrdersByUser(
+    userId: string,
+    pagination?: PaginationDto,
+  ): Promise<{ data: OrderDto[]; total: number }> {
+    const [orders, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where: { customerId: userId },
+        orderBy: { createdAt: 'desc' },
+        skip: pagination?.skip,
+        take: pagination?.limit,
+        include: {
+          items: {
+            include: {
+              book: true,
+            },
+          },
+        },
+      }),
+      this.prisma.order.count({
+        where: { customerId: userId },
+      }),
+    ]);
+
+    return { data: orders, total };
   }
 
   async updateOrderStatus(id: string, status: string): Promise<OrderDto> {

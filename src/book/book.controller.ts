@@ -14,7 +14,7 @@ import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { CurrentUser } from 'src/auth/decorators/user.decorator';
-import { Roles } from './decorators/roles.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
 import { BookQueryDto } from './dto/book-query.dto';
 import { RolesGuard } from 'src/user/guards/roles.guard';
 import { Auth } from 'src/auth/decorators/auth.decorator';
