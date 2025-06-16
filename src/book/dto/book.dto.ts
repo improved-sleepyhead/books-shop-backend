@@ -10,8 +10,10 @@ export class BookDto {
   author?: string | null;
   publishedAt?: Date | null;
   publisher?: string | null;
-  vendorId: string;
+  coverUrl?: string | null;
+  imageUrls?: string[];
   createdAt: Date;
   updatedAt: Date;
   averageRating?: number | null;
+  isFavorite?: boolean;
 }

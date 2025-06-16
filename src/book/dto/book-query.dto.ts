@@ -32,4 +32,12 @@ export class BookQueryDto {
   @IsOptional()
   @IsNumber()
   readonly maxPrice?: number;
+
+  @IsOptional()
+  @IsString()
+  readonly userId?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  readonly isFavorite?: boolean;
 }
