@@ -8,6 +8,7 @@ import { UpdateProfileDto, UserProfileDto } from './dto/user-profile.dto';
 import { CreateUserDto, UpdateUserDto, UserDto } from './dto/user.dto';
 import { UserRole } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
+import { userProfileSelect, userSelect } from './constants/user.constants';
 
 @Injectable()
 export class UserService {
@@ -16,15 +17,7 @@ export class UserService {
   async getById(id: string): Promise<UserDto> {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        avatarUrl: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: userSelect,
     });
 
     if (!user) {
@@ -37,14 +30,7 @@ export class UserService {
   getByEmail(email: string) {
     return this.prisma.user.findUnique({
       where: { email },
-      select: {
-        id: true,
-        email: true,
-        password: true,
-        name: true,
-        role: true,
-        avatarUrl: true,
-      },
+      select: userSelect,
     });
   }
 
@@ -54,14 +40,7 @@ export class UserService {
     return this.prisma.user.findMany({
       skip,
       take: limit,
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        avatarUrl: true,
-        createdAt: true,
-      },
+      select: userSelect,
       orderBy: {
         createdAt: 'desc',
       },
@@ -71,14 +50,7 @@ export class UserService {
   async getProfile(userId: string): Promise<UserProfileDto> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        _count: {
-          select: {
-            orders: true,
-            reviews: true,
-          },
-        },
-      },
+      select: userProfileSelect,
     });
 
     if (!user) {
@@ -86,15 +58,10 @@ export class UserService {
     }
 
     return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      avatarUrl: user.avatarUrl,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      ...user,
       totalReviews: user._count.reviews,
       totalOrders: user._count.orders,
+      wishlistItemsCount: user._count.wishlistItems,
     };
   }
 
@@ -114,15 +81,7 @@ export class UserService {
         name: dto.name,
         avatarUrl: dto.avatarUrl,
       },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        avatarUrl: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: userSelect,
     });
   }
 
@@ -136,13 +95,7 @@ export class UserService {
         name: dto.name,
         role: dto.role || UserRole.CUSTOMER,
       },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        avatarUrl: true,
-      },
+      select: userSelect,
     });
   }
 
@@ -171,13 +124,7 @@ export class UserService {
     return this.prisma.user.update({
       where: { id },
       data,
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        avatarUrl: true,
-      },
+      select: userSelect,
     });
   }
 
@@ -202,13 +149,7 @@ export class UserService {
 
     return this.prisma.user.delete({
       where: { id },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        avatarUrl: true,
-      },
+      select: userSelect,
     });
   }
 }
