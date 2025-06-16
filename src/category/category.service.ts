@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CategoryDto } from './dto/category.dto';
+import { generateSlug } from 'src/common/services/slug-generator.service';
 
 @Injectable()
 export class CategoryService {
@@ -27,7 +28,7 @@ export class CategoryService {
     return this.prisma.category.create({
       data: {
         name: dto.name,
-        slug: dto.slug,
+        slug: generateSlug(dto.name),
         imageUrl: dto.imageUrl,
       },
     });
@@ -46,7 +47,6 @@ export class CategoryService {
       where: { id },
       data: {
         name: dto.name,
-        slug: dto.slug,
         imageUrl: dto.imageUrl,
       },
     });

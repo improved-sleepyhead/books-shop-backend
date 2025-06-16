@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { TagDto } from './dto/tag.dto';
+import { generateSlug } from 'src/common/services/slug-generator.service';
 
 @Injectable()
 export class TagService {
@@ -27,6 +28,7 @@ export class TagService {
     return this.prisma.tag.create({
       data: {
         name: dto.name,
+        slug: generateSlug(dto.name),
       },
     });
   }
