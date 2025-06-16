@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { PutObjectCommand, S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class FileUploadService {
@@ -55,5 +55,26 @@ export class FileUploadService {
     );
 
     return `https://f7b01721-dc41-43b6-af3e-346f5350e186.selstorage.ru/${fileName}`
+  }
+
+  async deleteFile(fileUrl: string): Promise<void> {
+    try {
+      const bucket = this.configService.get('AWS_BUCKET');
+      const fileName = fileUrl.split('/').pop();
+      
+      if (!fileName) {
+        throw new Error('Invalid file URL');
+      }
+
+      await this.s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: bucket,
+          Key: fileName,
+        })
+      );
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      throw error;
+    }
   }
 }
