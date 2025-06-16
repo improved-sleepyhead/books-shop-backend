@@ -23,6 +23,8 @@ export class BookService {
       digital,
       minPrice,
       maxPrice,
+      userId,
+      isFavorite,
     } = query;
 
     const where: any = {};
@@ -37,11 +39,26 @@ export class BookService {
       if (maxPrice !== undefined) where.price.lte = maxPrice;
     }
 
+    if (isFavorite && userId) {
+      where.wishlistItems = {
+        some: {
+          userId,
+          isLiked: true,
+        },
+      };
+    }
+
     const books = await this.prisma.book.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
+      include: {
+        wishlistItems: userId ? {
+          where: { userId },
+          select: { isLiked: true },
+        } : false,
+      },
     });
 
     const bookIds = books.map((book) => book.id);
@@ -60,13 +77,19 @@ export class BookService {
     return books.map((book) => ({
       ...book,
       averageRating: ratingMap[book.id] ?? null,
+      isFavorite: userId ? book.wishlistItems?.[0]?.isLiked ?? false : undefined,
     }));
   }
 
-
-  async getById(id: string): Promise<BookDto> {
+  async getById(id: string, userId?: string): Promise<BookDto> {
     const book = await this.prisma.book.findUnique({
       where: { id },
+      include: {
+        wishlistItems: userId ? {
+          where: { userId },
+          select: { isLiked: true },
+        } : false,
+      },
     });
 
     if (!book) throw new NotFoundException('Book not found');
@@ -79,31 +102,24 @@ export class BookService {
     return {
       ...book,
       averageRating: avgRating._avg.rating ?? null,
+      isFavorite: userId ? book.wishlistItems?.[0]?.isLiked ?? false : undefined,
     };
   }
 
-  async create(userId: string, dto: CreateBookDto): Promise<BookDto> {
-    const vendor = await this.prisma.vendor.findUnique({
-      where: { ownerId: userId },
-    });
-
-    if (!vendor) {
-      throw new NotFoundException('Vendor not found');
-    }
-
+  async create(dto: CreateBookDto): Promise<BookDto> {
     return this.prisma.book.create({
       data: {
         ...dto,
         price: new Decimal(dto.price),
         digital: dto.digital ?? false,
         publishedAt: dto.publishedAt ? new Date(dto.publishedAt) : undefined,
-        vendorId: vendor.id,
         categories: dto.categoryIds?.length
           ? { connect: dto.categoryIds.map((id) => ({ id })) }
           : undefined,
         tags: dto.tagIds?.length
           ? { connect: dto.tagIds.map((id) => ({ id })) }
           : undefined,
+        imageUrls: dto.imageUrls ?? [],
       },
     });
   }
@@ -127,6 +143,7 @@ export class BookService {
         tags: dto.tagIds?.length
           ? { set: dto.tagIds.map((id) => ({ id })) }
           : undefined,
+        imageUrls: dto.imageUrls !== undefined ? dto.imageUrls : undefined,
       },
     });
   }
@@ -140,6 +157,33 @@ export class BookService {
 
     return this.prisma.book.delete({
       where: { id },
+    });
+  }
+
+  async toggleFavorite(userId: string, bookId: string): Promise<boolean> {
+    const existingItem = await this.prisma.wishlistItem.findFirst({
+      where: { userId, bookId },
+    });
+
+    if (existingItem) {
+      const updated = await this.prisma.wishlistItem.update({
+        where: { id: existingItem.id },
+        data: { isLiked: !existingItem.isLiked },
+      });
+      return updated.isLiked;
+    } else {
+      await this.prisma.wishlistItem.create({
+        data: { userId, bookId, isLiked: true },
+      });
+      return true;
+    }
+  }
+
+  async getFavorites(userId: string, query: Omit<BookQueryDto, 'userId' | 'isFavorite'>): Promise<BookDto[]> {
+    return this.getAll({
+      ...query,
+      userId,
+      isFavorite: true,
     });
   }
 }

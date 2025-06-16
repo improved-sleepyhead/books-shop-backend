@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsDateString, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsDateString, IsArray, IsNumber } from 'class-validator';
 
 export class CreateBookDto {
   @IsString()
@@ -8,7 +8,8 @@ export class CreateBookDto {
   @IsString()
   description?: string;
 
-  price: number | string;
+  @IsNumber()
+  price: number;
 
   @IsString()
   isbn: string;
@@ -38,4 +39,13 @@ export class CreateBookDto {
   @IsArray()
   @IsString({ each: true })
   tagIds?: string[];
+
+  @IsOptional()
+  @IsString()
+  coverUrl?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  imageUrls?: string[];
 }
