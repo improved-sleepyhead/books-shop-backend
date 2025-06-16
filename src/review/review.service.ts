@@ -51,21 +51,45 @@ export class ReviewService {
     return review;
   }
 
-  async getByUserId(userId: string): Promise<ReviewDto[]> {
-    return this.prisma.review.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
+  async getByUserId(
+    userId: string,
+    pagination?: PaginationDto,
+  ): Promise<{ data: ReviewDto[]; total: number }> {
+    const [reviews, total] = await Promise.all([
+      this.prisma.review.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        skip: pagination?.skip,
+        take: pagination?.limit,
+      }),
+      this.prisma.review.count({
+        where: { userId },
+      }),
+    ]);
+
+    return { data: reviews, total };
   }
 
-  async getByBookId(bookId: string): Promise<ReviewDto[]> {
-    return this.prisma.review.findMany({
-      where: { bookId },
-      include: {
-        user: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async getByBookId(
+    bookId: string,
+    pagination?: PaginationDto,
+  ): Promise<{ data: ReviewDto[]; total: number }> {
+    const [reviews, total] = await Promise.all([
+      this.prisma.review.findMany({
+        where: { bookId },
+        include: {
+          user: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: pagination?.skip,
+        take: pagination?.limit,
+      }),
+      this.prisma.review.count({
+        where: { bookId },
+      }),
+    ]);
+
+    return { data: reviews, total };
   }
 
   async update(id: string, dto: UpdateReviewDto): Promise<ReviewDto> {

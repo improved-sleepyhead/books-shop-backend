@@ -1,5 +1,3 @@
-// src/review/reviewController.ts
-
 import {
   Controller,
   Get,
@@ -9,6 +7,7 @@ import {
   Delete,
   Patch,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { ReviewService } from './review.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
@@ -37,13 +36,19 @@ export class ReviewController {
   }
 
   @Get('user/me')
-  getMyReviews(@CurrentUser('id') userId: string): Promise<ReviewDto[]> {
-    return this.reviewService.getByUserId(userId);
+  getMyReviews(
+    @CurrentUser('id') userId: string,
+    @Query() pagination: PaginationDto,
+  ) {
+    return this.reviewService.getByUserId(userId, pagination);
   }
 
   @Get('book/:bookId')
-  getForBook(@Param('bookId') bookId: string): Promise<ReviewDto[]> {
-    return this.reviewService.getByBookId(bookId);
+  getForBook(
+    @Param('bookId') bookId: string,
+    @Query() pagination: PaginationDto,
+  ) {
+    return this.reviewService.getByBookId(bookId, pagination);
   }
 
   @Patch(':id')
