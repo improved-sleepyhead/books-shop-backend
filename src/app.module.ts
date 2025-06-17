@@ -9,9 +9,10 @@ import { ReviewModule } from './review/review.module';
 import { CategoryModule } from './category/category.module';
 import { TagModule } from './tag/tag.module';
 import { WishlistModule } from './wishlist/wishlist.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [AuthModule, UserModule, BookModule, OrderModule, ReviewModule, CategoryModule, TagModule, WishlistModule],
+  imports: [AuthModule, UserModule, BookModule, OrderModule, ReviewModule, CategoryModule, TagModule, WishlistModule, ConfigModule.forRoot()],
   controllers: [AppController],
   providers: [AppService],
 })
