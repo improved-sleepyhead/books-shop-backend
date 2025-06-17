@@ -21,7 +21,8 @@ export class AuthService {
         const tokens = this.issueTokens({
             id: user.id,
             email: user.email,
-            name: user.name
+            name: user.name,
+            role: user.role
         });
 
         return {
@@ -39,7 +40,8 @@ export class AuthService {
         const tokens = this.issueTokens({
             id: user.id,
             email: user.email,
-            name: user.name
+            name: user.name,
+            role: user.role
         });
 
         return {
@@ -63,7 +65,8 @@ export class AuthService {
         const tokens = this.issueTokens({
             id: user.id,
             email: user.email,
-            name: user.name
+            name: user.name,
+            role: user.role,
         });
 
         return {
@@ -72,11 +75,12 @@ export class AuthService {
         };
     }
 
-    private issueTokens(user: { id: string; email: string; name: string }) {
+    private issueTokens(user: { id: string; email: string; name: string, role: string}) {
         const accessToken = this.jwt.sign({
             id: user.id,
             email: user.email,
             name: user.name,
+            role: user.role,
         }, {
             expiresIn: '1h'
         });
@@ -85,6 +89,7 @@ export class AuthService {
             id: user.id,
             email: user.email,
             name: user.name,
+            role: user.role,
         }, {
             expiresIn: '7d'
         });
